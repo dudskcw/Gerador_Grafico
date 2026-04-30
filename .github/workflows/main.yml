@@ -2,7 +2,7 @@ name: Atualizar Graficos Notion
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '33 6 * * *'
   workflow_dispatch:
 
 jobs:
