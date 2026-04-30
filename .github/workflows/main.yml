@@ -2,8 +2,8 @@ name: Atualizar Graficos Notion
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Roda automaticamente todo dia à meia-noite
-  workflow_dispatch: # Permite que você clique num botão para atualizar na hora
+    - cron: '0 0 * * *' 
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -19,14 +19,14 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Instalar dependências
+      - name: Instalar bibliotecas
         run: pip install requests pandas plotly
 
-      - name: Processar Dados e Gerar HTML
+      - name: Rodar Script
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           DATABASE_ID: ${{ secrets.DATABASE_ID }}
-        run: python gerar_graficos.py
+        run: python main.py
 
       - name: Deploy para GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
