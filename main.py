@@ -2,6 +2,7 @@ import os
 import requests
 import pandas as pd
 import plotly.express as px
+import datetime
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 DATABASE_ID = os.environ.get("DATABASE_ID")
@@ -14,6 +15,37 @@ headers = {
     "Content-Type": "application/json",
     "Notion-Version": "2022-06-28"
 }
+
+
+# 🔹 Função robusta para ler propriedades (funciona com País, Países, etc)
+def get_value(props, nome):
+    for key in props:
+        key_norm = key.lower().replace("í", "i").replace("é", "e")
+        nome_norm = nome.lower().replace("í", "i").replace("é", "e")
+
+        if key_norm == nome_norm:
+            try:
+                prop = props[key]
+
+                if prop["type"] == "select":
+                    return prop["select"]["name"] if prop["select"] else "Não definido"
+
+                elif prop["type"] == "multi_select":
+                    return ", ".join([x["name"] for x in prop["multi_select"]]) or "Não definido"
+
+                elif prop["type"] == "title":
+                    return prop["title"][0]["plain_text"] if prop["title"] else "Sem título"
+
+                elif prop["type"] == "rich_text":
+                    return prop["rich_text"][0]["plain_text"] if prop["rich_text"] else "Não definido"
+
+                else:
+                    return "Não definido"
+
+            except:
+                return "Não definido"
+
+    return "Não definido"
 
 
 def carregar_dados_notion():
@@ -48,15 +80,9 @@ def carregar_dados_notion():
     for item in all_results:
         props = item.get("properties", {})
 
-        def get_select(nome):
-            try:
-                return props[nome]["select"]["name"]
-            except:
-                return "Não definido"
-
-        franquia = get_select("Franquia")
-        pais = get_select("País")
-        nei = get_select("NEI")
+        franquia = get_value(props, "Franquia")
+        pais = get_value(props, "Países")   # ✔ CORRETO
+        nei = get_value(props, "NEI")
 
         jogos.append({
             "Franquia": franquia,
@@ -64,7 +90,7 @@ def carregar_dados_notion():
             "NEI": nei
         })
 
-        # multi-select consoles
+        # consoles (multi-select)
         try:
             for c in props["Console"]["multi_select"]:
                 consoles.append(c["name"])
@@ -78,7 +104,6 @@ def carregar_dados_notion():
 
 
 def gerar_graficos(df_jogos, df_consoles):
-    # Agrupamentos corretos
     df_franquia = df_jogos["Franquia"].value_counts().reset_index()
     df_franquia.columns = ["Franquia", "count"]
 
@@ -90,7 +115,6 @@ def gerar_graficos(df_jogos, df_consoles):
 
     df_console = df_consoles.value_counts().reset_index(name="count")
 
-    # Criação dos gráficos
     fig1 = px.pie(df_franquia, names="Franquia", values="count", hole=0.4, title="Franquias")
     fig2 = px.pie(df_pais, names="Pais", values="count", hole=0.4, title="Países")
     fig3 = px.pie(df_console, names="Console", values="count", hole=0.4, title="Consoles")
@@ -137,7 +161,7 @@ def gerar_html(figs):
         <body>
         """)
 
-        # inclui plotly só uma vez
+        # primeiro com JS
         f.write("<div class='card'>")
         f.write(figs[0].to_html(full_html=False, include_plotlyjs=True))
         f.write("</div>")
@@ -146,6 +170,9 @@ def gerar_html(figs):
             f.write("<div class='card'>")
             f.write(fig.to_html(full_html=False, include_plotlyjs=False))
             f.write("</div>")
+
+        # 🔥 FORÇA atualização sempre
+        f.write(f"<p style='grid-column: span 2; text-align:center;'>Atualizado em {datetime.datetime.now()}</p>")
 
         f.write("</body></html>")
 
@@ -163,10 +190,10 @@ def gerar_html_erro(msg):
 
 
 # EXECUÇÃO
-df_jogos, resultado = carregar_dados_notion()
+df_jogos, df_consoles = carregar_dados_notion()
 
-if isinstance(resultado, str):
-    gerar_html_erro(resultado)
+if df_jogos is None:
+    gerar_html_erro(df_consoles)
 else:
-    figs = gerar_graficos(df_jogos, resultado)
+    figs = gerar_graficos(df_jogos, df_consoles)
     gerar_html(figs)
