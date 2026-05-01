@@ -624,7 +624,7 @@ if err:
     print(f"Erro: {err}")
 else:
     def to_counts(series):
-    return {k: int(v) for k, v in series.value_counts().items()}
+        return {k: int(v) for k, v in series.value_counts().items()}
 
     franquias = to_counts(df_jogos["Franquia"])
     paises    = to_counts(df_jogos["Pais"])
