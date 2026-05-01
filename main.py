@@ -123,42 +123,69 @@ def gerar_graficos(df_jogos, df_consoles):
     figs = [fig1, fig2, fig3, fig4]
 
     for fig in figs:
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        fig.update_layout(
-            showlegend=False,
-            margin=dict(t=40, b=10, l=10, r=10),
-            paper_bgcolor="#1e1e1e",
-            font_color="white"
-        )
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(t=40, b=10, l=10, r=10),
+        paper_bgcolor="#1c1c1c",
+        plot_bgcolor="#1c1c1c",
+        font_color="white",
+        autosize=True,
+        height=350
+    )
 
     return figs
 
 
 def gerar_html(figs):
+    now = datetime.datetime.now()
+    data_formatada = now.strftime("%d/%m/%Y às %H:%M")
+
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write("""
+        f.write(f"""
         <html>
         <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-        body {
+        body {{
             font-family: sans-serif;
-            background: #121212;
+            background: #1c1c1c;
             color: white;
+            padding: 15px;
+            margin: 0;
+        }}
+
+        .grid {{
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-        }
-        .card {
-            background: #1e1e1e;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }}
+
+        .card {{
+            background: #242424;
             border-radius: 15px;
             padding: 10px;
             border: 1px solid #333;
-        }
+            overflow: hidden;
+        }}
+
+        .card .plotly-graph-div {{
+            width: 100% !important;
+            height: 100% !important;
+        }}
+
+        .footer {{
+            text-align: center;
+            margin-top: 20px;
+            opacity: 0.7;
+            font-size: 14px;
+        }}
         </style>
         </head>
         <body>
+
+        <div class="grid">
         """)
 
         # primeiro com JS
@@ -171,11 +198,14 @@ def gerar_html(figs):
             f.write(fig.to_html(full_html=False, include_plotlyjs=False))
             f.write("</div>")
 
-        # 🔥 FORÇA atualização sempre
-        f.write(f"<p style='grid-column: span 2; text-align:center;'>Atualizado em {datetime.datetime.now()}</p>")
-
-        f.write("</body></html>")
-
+        f.write(f"""
+        </div>
+        <div class="footer">
+            Atualizado em {data_formatada}
+        </div>
+        </body>
+        </html>
+        """)
 
 def gerar_html_erro(msg):
     with open("index.html", "w", encoding="utf-8") as f:
