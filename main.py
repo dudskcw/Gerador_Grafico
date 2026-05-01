@@ -122,7 +122,7 @@ def gerar_graficos(df_jogos, df_consoles):
 
     figs = [fig1, fig2, fig3, fig4]
 
-    for fig in figs:
+for fig in figs:
     fig.update_traces(textposition='inside', textinfo='percent+label')
     fig.update_layout(
         showlegend=False,
