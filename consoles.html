@@ -7,344 +7,489 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 
-    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-        background: #201c1c;
-        color: #e8e0d8;
-        font-family: 'Rajdhani', sans-serif;
-        min-height: 100vh;
-    }
+html, body {
+    background: #201c1c;
+    color: #e8e0d8;
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+}
 
-    /* ── NAV ── */
-    nav {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        padding: 22px 24px;
-        border-bottom: 1px solid #2e2828;
-        flex-wrap: wrap;
-    }
+@keyframes glowing {
+    0%   { background-position: 0 0; }
+    50%  { background-position: 400% 0; }
+    100% { background-position: 0 0; }
+}
 
-    .nav-brand {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 13px;
-        color: #5a5050;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        margin-right: auto;
-    }
+/* ── SIDEBAR ── */
+.sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: 56px;
+    background: #140f0f;
+    border-right: 1px solid #2e2828;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 0;
+    gap: 8px;
+    z-index: 100;
+    transition: width .3s ease;
+    overflow: hidden;
+}
 
-    .glow-btn {
-        position: relative;
-        z-index: 0;
-        padding: 0 22px;
-        height: 38px;
-        background: #111;
-        color: #e8e0d8;
-        border: none;
-        border-radius: 8px;
-        font-family: 'Rajdhani', sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        transition: color .2s;
-    }
+.sidebar.open {
+    width: 260px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 14px 12px;
+    gap: 10px;
+    height: auto;
+    bottom: auto;
+    border-radius: 0 0 16px 0;
+    border-bottom: 1px solid #2e2828;
+}
 
-    .glow-btn.active {
-        color: #fff;
-    }
+.sidebar-toggle {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: #1a1616;
+    color: #8a7f7f;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: color .2s;
+    margin-bottom: 4px;
+}
+.sidebar-toggle:hover { color: #fff; }
+.sidebar.open .sidebar-toggle { margin-bottom: 0; }
 
-    .glow-btn::before {
-        content: '';
-        background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
-        position: absolute;
-        top: -2px; left: -2px;
-        background-size: 400%;
-        z-index: -1;
-        filter: blur(5px);
-        width: calc(100% + 4px);
-        height: calc(100% + 4px);
-        animation: glowing 20s linear infinite;
-        opacity: 0;
-        transition: opacity .3s ease-in-out;
-        border-radius: 8px;
-    }
+.sidebar-brand {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #5a5050;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    flex: 1;
+    align-self: center;
+}
+.sidebar.open .sidebar-brand { opacity: 1; }
 
-    .glow-btn::after {
-        content: '';
-        z-index: -1;
-        position: absolute;
-        width: 100%; height: 100%;
-        background: #111;
-        left: 0; top: 0;
-        border-radius: 8px;
-    }
+.sidebar-divider {
+    width: 32px; height: 1px;
+    background: #2e2828;
+    flex-shrink: 0;
+    transition: width .3s;
+}
+.sidebar.open .sidebar-divider { display: none; }
 
-    .glow-btn:hover::before,
-    .glow-btn.active::before { opacity: 1; }
+/* ── NAV BUTTONS inside sidebar ── */
+.glow-btn {
+    position: relative;
+    z-index: 0;
+    width: 36px; height: 36px;
+    padding: 0;
+    background: #111;
+    color: #e8e0d8;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: color .2s, width .3s, padding .3s;
+    white-space: nowrap;
+    overflow: hidden;
+    flex-shrink: 0;
+}
 
-    .glow-btn:active { color: #000; }
-    .glow-btn:active::after { background: transparent; }
+.sidebar.open .glow-btn {
+    width: auto;
+    padding: 0 14px;
+    height: 36px;
+}
 
-    @keyframes glowing {
-        0%   { background-position: 0 0; }
-        50%  { background-position: 400% 0; }
-        100% { background-position: 0 0; }
-    }
+.glow-btn .btn-label {
+    display: none;
+    font-size: 13px;
+}
+.sidebar.open .glow-btn .btn-label { display: inline; }
 
-    /* ── PAGE ── */
-    .page-header {
-        text-align: center;
-        padding: 40px 24px 12px;
-    }
+.glow-btn.active { color: #fff; }
 
-    .page-header h1 {
-        font-size: 36px;
-        font-weight: 700;
-        letter-spacing: 3px;
-        text-transform: uppercase;
-        color: #fff;
-        line-height: 1;
-    }
+.glow-btn::before {
+    content: '';
+    background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
+    position: absolute;
+    top: -2px; left: -2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(5px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing 20s linear infinite;
+    opacity: 0;
+    transition: opacity .3s;
+    border-radius: 8px;
+}
+.glow-btn::after {
+    content: '';
+    z-index: -1;
+    position: absolute;
+    width: 100%; height: 100%;
+    background: #111;
+    left: 0; top: 0;
+    border-radius: 8px;
+}
+.glow-btn:hover::before,
+.glow-btn.active::before { opacity: 1; }
+.glow-btn:active { color: #000; }
+.glow-btn:active::after { background: transparent; }
 
-    .page-header .sub {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 11px;
-        color: #5a5050;
-        letter-spacing: 3px;
-        margin-top: 6px;
-    }
+/* ── MAIN CONTENT offset ── */
+.main {
+    margin-left: 56px;
+    min-height: 100vh;
+}
 
-    /* ── CHART CARD ── */
-    .chart-wrap {
-        max-width: 680px;
-        margin: 32px auto;
-        padding: 0 20px 60px;
-    }
+/* ── PAGE HEADER ── */
+.page-header {
+    text-align: center;
+    padding: 40px 24px 12px;
+}
+.page-header h1 {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #fff;
+    line-height: 1;
+}
+.page-header .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #5a5050;
+    letter-spacing: 3px;
+    margin-top: 6px;
+}
 
-    .card {
-        background: #1a1616;
-        border: 1px solid #2e2828;
-        border-radius: 16px;
-        padding: 32px 24px 24px;
-        position: relative;
-        overflow: hidden;
-    }
+/* ── CHART LAYOUT ── */
+.chart-outer {
+    max-width: 900px;
+    margin: 28px auto;
+    padding: 0 20px 60px;
+}
 
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, #4a3f3f, transparent);
-    }
+.card {
+    background: #1a1616;
+    border: 1px solid #2e2828;
+    border-radius: 16px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+}
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #4a3f3f, transparent);
+    pointer-events: none;
+}
 
-    .chart-canvas-wrap {
-        position: relative;
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto;
-    }
+/* grafico tamanho fixo */
+.chart-col {
+    flex-shrink: 0;
+    width: 280px;
+    position: relative;
+}
 
-    .chart-center-label {
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        pointer-events: none;
-    }
+.chart-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+.chart-center-label .total {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+.chart-center-label .total-label {
+    font-size: 10px;
+    color: #5a5050;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
 
-    .chart-center-label .total {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 28px;
-        font-weight: 700;
-        color: #fff;
-        line-height: 1;
-    }
+/* legenda scroll independente */
+.legend-col {
+    flex: 1;
+    min-width: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-right: 4px;
+}
 
-    .chart-center-label .total-label {
-        font-size: 11px;
-        color: #5a5050;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        margin-top: 4px;
-    }
+.legend-col::-webkit-scrollbar { width: 4px; }
+.legend-col::-webkit-scrollbar-track { background: transparent; }
+.legend-col::-webkit-scrollbar-thumb { background: #2e2828; border-radius: 4px; }
 
-    /* ── LEGEND ── */
-    .legend {
-        margin-top: 28px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: #201c1c;
+    border: 1px solid #2e2828;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .2s, opacity .2s;
+    user-select: none;
+    flex-shrink: 0;
+}
+.legend-item:hover { border-color: #4a3f3f; }
+.legend-item.hidden { opacity: .35; }
 
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        background: #201c1c;
-        border: 1px solid #2e2828;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: border-color .2s, opacity .2s;
-        user-select: none;
-    }
+.legend-swatch {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.legend-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e8e0d8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.legend-pct {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #8a7f7f;
+    flex-shrink: 0;
+}
+.legend-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #5a5050;
+    flex-shrink: 0;
+}
 
-    .legend-item:hover { border-color: #4a3f3f; }
+/* ── TIMESTAMP ── */
+.timestamp {
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #3a3333;
+    letter-spacing: 2px;
+    margin-top: 16px;
+}
 
-    .legend-item.hidden {
-        opacity: 0.35;
-    }
+/* ── INDEX ── */
+.index-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 24px;
+}
 
-    .legend-swatch {
-        width: 12px; height: 12px;
-        border-radius: 3px;
-        flex-shrink: 0;
-    }
+.greeting {
+    text-align: center;
+    margin-bottom: 48px;
+}
+.greeting .time-msg {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #5a5050;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+.greeting h1 {
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    line-height: 1.1;
+}
+.greeting h1 span {
+    background: linear-gradient(90deg,#ff6b6b,#ffd43b,#69db7c,#4dabf7,#da77f2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.greeting .count-line {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: #5a5050;
+    letter-spacing: 2px;
+    margin-top: 12px;
+}
+.greeting .count-line strong {
+    color: #8a7f7f;
+}
 
-    .legend-name {
-        flex: 1;
-        font-size: 15px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        color: #e8e0d8;
-    }
+.index-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 520px;
+}
 
-    .legend-pct {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 13px;
-        color: #8a7f7f;
-    }
+.index-btn {
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    height: 90px;
+    background: #111;
+    color: #e8e0d8;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: color .2s;
+}
+.index-btn .icon { font-size: 26px; }
 
-    .legend-count {
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 13px;
-        color: #5a5050;
-    }
-
-    /* ── TIMESTAMP ── */
-    .timestamp {
-        text-align: center;
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 11px;
-        color: #3a3333;
-        letter-spacing: 2px;
-        margin-top: 20px;
-    }
-
-    /* ── INDEX GRID ── */
-    .index-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        max-width: 500px;
-        margin: 60px auto;
-        padding: 0 24px;
-    }
-
-    .index-btn {
-        position: relative;
-        z-index: 0;
-        width: 100%;
-        aspect-ratio: 1;
-        background: #111;
-        color: #e8e0d8;
-        border: none;
-        border-radius: 16px;
-        font-family: 'Rajdhani', sans-serif;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        cursor: pointer;
-        text-decoration: none;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: color .2s;
-    }
-
-    .index-btn .icon { font-size: 32px; }
-
-    .index-btn::before {
-        content: '';
-        background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
-        position: absolute;
-        top: -2px; left: -2px;
-        background-size: 400%;
-        z-index: -1;
-        filter: blur(8px);
-        width: calc(100% + 4px);
-        height: calc(100% + 4px);
-        animation: glowing 20s linear infinite;
-        opacity: 0;
-        transition: opacity .35s ease-in-out;
-        border-radius: 16px;
-    }
-
-    .index-btn::after {
-        content: '';
-        z-index: -1;
-        position: absolute;
-        width: 100%; height: 100%;
-        background: #111;
-        left: 0; top: 0;
-        border-radius: 16px;
-    }
-
-    .index-btn:hover::before { opacity: 1; }
-    .index-btn:hover { color: #fff; }
-    .index-btn:active { color: #000; }
-    .index-btn:active::after { background: transparent; }
+.index-btn::before {
+    content: '';
+    background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
+    position: absolute;
+    top: -2px; left: -2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(8px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing 20s linear infinite;
+    opacity: 0;
+    transition: opacity .35s;
+    border-radius: 14px;
+}
+.index-btn::after {
+    content: '';
+    z-index: -1;
+    position: absolute;
+    width: 100%; height: 100%;
+    background: #111;
+    left: 0; top: 0;
+    border-radius: 14px;
+}
+.index-btn:hover::before { opacity: 1; }
+.index-btn:hover { color: #fff; }
+.index-btn:active { color: #000; }
+.index-btn:active::after { background: transparent; }
 
 </style>
 </head>
 <body>
 
-<nav><span class="nav-brand">// GAME.DB</span><a href="index.html" class="glow-btn">🏠 Home</a><a href="franquias.html" class="glow-btn">🎮 Franquias</a><a href="paises.html" class="glow-btn">🌍 Países</a><a href="consoles.html" class="glow-btn active">🕹️ Consoles</a><a href="nei.html" class="glow-btn">📊 Experiência</a></nav>
 
-<div class="page-header">
-  <h1>Consoles</h1>
-  <p class="sub">plataformas do acervo</p>
-</div>
+<nav class="sidebar" id="sidebar">
+  <button class="sidebar-toggle" id="sb-toggle" title="Menu">&#9776;</button>
+  <span class="sidebar-brand">// GAME.DB</span>
+  <div class="sidebar-divider"></div>
+  <a href="index.html" class="glow-btn">🏠<span class="btn-label">Home</span></a>
+<a href="franquias.html" class="glow-btn">🎮<span class="btn-label">Franquias</span></a>
+<a href="paises.html" class="glow-btn">🌍<span class="btn-label">Países</span></a>
+<a href="consoles.html" class="glow-btn active">🕹️<span class="btn-label">Consoles</span></a>
+<a href="nei.html" class="glow-btn">📊<span class="btn-label">Experiência</span></a>
 
-<div class="chart-wrap">
-  <div class="card">
-    <div class="chart-canvas-wrap">
-      <canvas id="myChart"></canvas>
-      <div class="chart-center-label">
-        <div class="total" id="centerTotal">228</div>
-        <div class="total-label">total</div>
-      </div>
-    </div>
+</nav>
 
-    <div class="legend" id="legend"></div>
+<script>
+(function(){
+    var sb = document.getElementById('sidebar');
+    var toggle = document.getElementById('sb-toggle');
+    toggle.addEventListener('click', function(e){
+        e.stopPropagation();
+        sb.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+        if (!sb.contains(e.target)) sb.classList.remove('open');
+    });
+})();
+</script>
+
+
+
+<div class="main">
+
+  <div class="page-header">
+    <h1>Consoles</h1>
+    <p class="sub">plataformas do acervo</p>
   </div>
 
-  <p class="timestamp">ATUALIZADO EM 01/05/2026 às 20:04</p>
+  <div class="chart-outer">
+    <div class="card">
+
+      <div class="chart-col">
+        <canvas id="myChart"></canvas>
+        
+      <div class="chart-center-label">
+        <div class="total">23</div>
+        <div class="total-label">tipos</div>
+      </div>
+      </div>
+
+      <div class="legend-col" id="legend"></div>
+
+    </div>
+    <p class="timestamp">ATUALIZADO EM 01/05/2026 às 20:36</p>
+  </div>
+
 </div>
 
 <script>
-const LABELS  = ["Xbox Series", "Wii", "Mobile", "SNES", "PS2", "Mega Drive", "PC", "GBA", "NES", "Game Boy", "NDS", "PS1", "N64", "Game Cube", "PSP", "Game Boy Color", "3DS", "Master System", "Arcade", "Sega CD", "Sega 32X", "WonderSwan", "PC Engine"];
-const COUNTS  = [38, 24, 18, 17, 16, 14, 13, 13, 10, 10, 9, 9, 7, 7, 7, 5, 3, 2, 2, 1, 1, 1, 1];
-const COLORS  = ["#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7", "#748ffc", "#da77f2", "#f783ac", "#a9e34b", "#63e6be", "#74c0fc", "#e599f7", "#ffa8a8", "#ffe066", "#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7", "#748ffc", "#da77f2"];
-const TOTAL   = 228;
+const LABELS = ["Xbox Series", "Wii", "Mobile", "SNES", "PS2", "Mega Drive", "PC", "GBA", "Game Boy", "PS1", "NDS", "NES", "N64", "Game Cube", "PSP", "Game Boy Color", "3DS", "Master System", "Arcade", "Sega CD", "Sega 32X", "WonderSwan", "PC Engine"];
+const COUNTS = [38, 24, 18, 17, 16, 14, 13, 13, 10, 9, 9, 9, 7, 7, 7, 5, 3, 2, 2, 1, 1, 1, 1];
+const COLORS = ["#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7", "#748ffc", "#da77f2", "#f783ac", "#a9e34b", "#63e6be", "#74c0fc", "#e599f7", "#ffa8a8", "#ffe066", "#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7", "#748ffc", "#da77f2"];
+const TOTAL  = 227;
 
 const hidden = new Set();
-
 const ctx = document.getElementById('myChart').getContext('2d');
 
 function buildDataset() {
@@ -393,15 +538,13 @@ function renderLegend() {
   leg.innerHTML = '';
   LABELS.forEach((label, i) => {
     const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
-    const isHidden = hidden.has(i);
     const item = document.createElement('div');
-    item.className = 'legend-item' + (isHidden ? ' hidden' : '');
+    item.className = 'legend-item' + (hidden.has(i) ? ' hidden' : '');
     item.innerHTML = `
       <div class="legend-swatch" style="background:${COLORS[i]}"></div>
       <span class="legend-name">${label}</span>
       <span class="legend-pct">${pct}%</span>
-      <span class="legend-count">${COUNTS[i]}</span>
-    `;
+      <span class="legend-count">${COUNTS[i]}</span>`;
     item.addEventListener('click', () => {
       if (hidden.has(i)) hidden.delete(i);
       else hidden.add(i);
