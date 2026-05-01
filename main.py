@@ -17,7 +17,7 @@ headers = {
 }
 
 
-# 🔹 Função robusta para ler propriedades (funciona com País, Países, etc)
+# 🔹 Função robusta
 def get_value(props, nome):
     for key in props:
         key_norm = key.lower().replace("í", "i").replace("é", "e")
@@ -38,9 +38,6 @@ def get_value(props, nome):
 
                 elif prop["type"] == "rich_text":
                     return prop["rich_text"][0]["plain_text"] if prop["rich_text"] else "Não definido"
-
-                else:
-                    return "Não definido"
 
             except:
                 return "Não definido"
@@ -78,29 +75,24 @@ def carregar_dados_notion():
     consoles = []
 
     for item in all_results:
+        if item.get("archived", False):
+            continue
+
         props = item.get("properties", {})
 
-        franquia = get_value(props, "Franquia")
-        pais = get_value(props, "Países")   # ✔ CORRETO
-        nei = get_value(props, "NEI")
-
         jogos.append({
-            "Franquia": franquia,
-            "Pais": pais,
-            "NEI": nei
+            "Franquia": get_value(props, "Franquia"),
+            "Pais": get_value(props, "Países"),
+            "NEI": get_value(props, "NEI")
         })
 
-        # consoles (multi-select)
         try:
             for c in props["Console"]["multi_select"]:
                 consoles.append(c["name"])
         except:
             pass
 
-    df_jogos = pd.DataFrame(jogos)
-    df_consoles = pd.DataFrame(consoles, columns=["Console"])
-
-    return df_jogos, df_consoles
+    return pd.DataFrame(jogos), pd.DataFrame(consoles, columns=["Console"])
 
 
 def gerar_graficos(df_jogos, df_consoles):
@@ -118,16 +110,17 @@ def gerar_graficos(df_jogos, df_consoles):
     fig1 = px.pie(df_franquia, names="Franquia", values="count", hole=0.4, title="Franquias")
     fig2 = px.pie(df_pais, names="Pais", values="count", hole=0.4, title="Países")
     fig3 = px.pie(df_console, names="Console", values="count", hole=0.4, title="Consoles")
-    fig4 = px.pie(df_nei, names="NEI", values="count", hole=0.4, title="Estresse (NEI)")
+    fig4 = px.pie(df_nei, names="NEI", values="count", hole=0.4, title="Experiência (NEI)")
 
     figs = [fig1, fig2, fig3, fig4]
 
     for fig in figs:
         fig.update_traces(textposition='inside', textinfo='percent+label')
         fig.update_layout(
-            showlegend=False,
+            autosize=True,
+            height=350,
             margin=dict(t=40, b=10, l=10, r=10),
-            paper_bgcolor="#1e1e1e",
+            paper_bgcolor="#1c1c1c",
             font_color="white"
         )
 
@@ -135,53 +128,79 @@ def gerar_graficos(df_jogos, df_consoles):
 
 
 def gerar_html(figs):
+    agora = datetime.datetime.now().strftime("%d/%m/%Y às %H:%M")
+
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write("""
+        f.write(f"""
         <html>
         <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
         <style>
-        body {
+        body {{
             font-family: sans-serif;
-            background: #121212;
+            background: #1c1c1c;
             color: white;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
             padding: 20px;
-        }
-        .card {
-            background: #1e1e1e;
+            margin: 0;
+        }}
+
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }}
+
+        .card {{
+            background: #252525;
             border-radius: 15px;
             padding: 10px;
             border: 1px solid #333;
-        }
+            overflow: hidden;
+        }}
+
+        .plotly-graph-div {{
+            width: 100% !important;
+            height: 100% !important;
+        }}
+
+        .footer {{
+            margin-top: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #aaa;
+        }}
         </style>
         </head>
+
         <body>
+
+        <div class="grid">
         """)
 
-        # primeiro com JS
-        f.write("<div class='card'>")
-        f.write(figs[0].to_html(full_html=False, include_plotlyjs=True))
-        f.write("</div>")
+        f.write("<div class='card'>" + figs[0].to_html(full_html=False, include_plotlyjs=True) + "</div>")
 
         for fig in figs[1:]:
-            f.write("<div class='card'>")
-            f.write(fig.to_html(full_html=False, include_plotlyjs=False))
-            f.write("</div>")
+            f.write("<div class='card'>" + fig.to_html(full_html=False, include_plotlyjs=False) + "</div>")
 
-        # 🔥 FORÇA atualização sempre
-        f.write(f"<p style='grid-column: span 2; text-align:center;'>Atualizado em {datetime.datetime.now()}</p>")
+        f.write(f"""
+        </div>
 
-        f.write("</body></html>")
+        <div class="footer">
+        Atualizado em {agora}
+        </div>
+
+        </body>
+        </html>
+        """)
 
 
 def gerar_html_erro(msg):
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(f"""
         <html>
-        <body style='background:#121212; color:white; text-align:center; padding-top:100px;'>
+        <body style='background:#1c1c1c; color:white; text-align:center; padding-top:100px;'>
         <h1>Erro</h1>
         <p>{msg}</p>
         </body>
