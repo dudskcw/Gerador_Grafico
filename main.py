@@ -134,7 +134,7 @@ for fig in figs:
         height=350
     )
 
-    return figs
+return figs
 
 
 def gerar_html(figs):
