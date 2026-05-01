@@ -247,22 +247,22 @@ def gerar_index():
 
         <div class="grid">
             <a href="franquias.html" class="btn">
-                <i>🎮 Franquias</i>
+                <i>🎮</i>
                 <span>Franquias</span>
             </a>
 
             <a href="paises.html" class="btn">
-                <i>🌍 Países</i>
+                <i>🌍</i>
                 <span>Países</span>
             </a>
 
             <a href="consoles.html" class="btn">
-                <i>🕹️ Consoles</i>
+                <i>🕹️</i>
                 <span>Consoles</span>
             </a>
 
             <a href="nei.html" class="btn">
-                <i>NEI</i>
+                <i>📊</i>
                 <span>Experiência</span>
             </a>
         </div>
@@ -270,7 +270,6 @@ def gerar_index():
         </body>
         </html>
         """)
-
 
 # EXECUÇÃO
 df_jogos, df_consoles = carregar_dados_notion()
