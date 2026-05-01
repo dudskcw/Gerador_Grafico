@@ -17,7 +17,6 @@ headers = {
 }
 
 
-# 🔹 Função robusta
 def get_value(props, nome):
     for key in props:
         key_norm = key.lower().replace("í", "i").replace("é", "e")
@@ -60,7 +59,7 @@ def carregar_dados_notion():
         response = requests.post(url, headers=headers, json=payload)
 
         if response.status_code != 200:
-            return None, f"Erro API: {response.status_code} - {response.text}"
+            return None, f"Erro API: {response.status_code}"
 
         data = response.json()
         all_results.extend(data.get("results", []))
@@ -69,7 +68,7 @@ def carregar_dados_notion():
         next_cursor = data.get("next_cursor")
 
     if not all_results:
-        return None, "Base vazia ou sem permissão."
+        return None, "Base vazia"
 
     jogos = []
     consoles = []
@@ -95,114 +94,110 @@ def carregar_dados_notion():
     return pd.DataFrame(jogos), pd.DataFrame(consoles, columns=["Console"])
 
 
-def gerar_graficos(df_jogos, df_consoles):
-    df_franquia = df_jogos["Franquia"].value_counts().reset_index()
-    df_franquia.columns = ["Franquia", "count"]
+def criar_grafico(df, coluna, titulo):
+    df_count = df[coluna].value_counts().reset_index()
+    df_count.columns = [coluna, "count"]
 
-    df_pais = df_jogos["Pais"].value_counts().reset_index()
-    df_pais.columns = ["Pais", "count"]
+    fig = px.pie(df_count, names=coluna, values="count", hole=0.4, title=titulo)
 
-    df_nei = df_jogos["NEI"].value_counts().reset_index()
-    df_nei.columns = ["NEI", "count"]
+    fig.update_traces(textposition='inside', textinfo='percent+label')
 
-    df_console = df_consoles.value_counts().reset_index(name="count")
+    fig.update_layout(
+        autosize=True,
+        height=400,
+        paper_bgcolor="#1c1c1c",
+        font_color="white",
+        margin=dict(t=40, b=10, l=10, r=10)
+    )
 
-    fig1 = px.pie(df_franquia, names="Franquia", values="count", hole=0.4, title="Franquias")
-    fig2 = px.pie(df_pais, names="Pais", values="count", hole=0.4, title="Países")
-    fig3 = px.pie(df_console, names="Console", values="count", hole=0.4, title="Consoles")
-    fig4 = px.pie(df_nei, names="NEI", values="count", hole=0.4, title="Experiência (NEI)")
-
-    figs = [fig1, fig2, fig3, fig4]
-
-    for fig in figs:
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        fig.update_layout(
-            autosize=True,
-            height=350,
-            margin=dict(t=40, b=10, l=10, r=10),
-            paper_bgcolor="#1c1c1c",
-            font_color="white"
-        )
-
-    return figs
+    return fig
 
 
-def gerar_html(figs):
+def criar_grafico_console(df):
+    df_count = df.value_counts().reset_index(name="count")
+
+    fig = px.pie(df_count, names="Console", values="count", hole=0.4, title="Consoles")
+
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+
+    fig.update_layout(
+        autosize=True,
+        height=400,
+        paper_bgcolor="#1c1c1c",
+        font_color="white",
+        margin=dict(t=40, b=10, l=10, r=10)
+    )
+
+    return fig
+
+
+def gerar_pagina(fig, arquivo, titulo):
     agora = datetime.datetime.now().strftime("%d/%m/%Y às %H:%M")
 
-    with open("index.html", "w", encoding="utf-8") as f:
+    with open(arquivo, "w", encoding="utf-8") as f:
         f.write(f"""
         <html>
         <head>
-        <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
         <style>
         body {{
-            font-family: sans-serif;
             background: #1c1c1c;
             color: white;
-            padding: 20px;
+            font-family: sans-serif;
             margin: 0;
+            padding: 20px;
         }}
 
-        .grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+        .nav a {{
+            margin-right: 15px;
+            color: #aaa;
+            text-decoration: none;
         }}
 
         .card {{
             background: #252525;
             border-radius: 15px;
             padding: 10px;
-            border: 1px solid #333;
-            overflow: hidden;
-        }}
-
-        .plotly-graph-div {{
-            width: 100% !important;
-            height: 100% !important;
-        }}
-
-        .footer {{
-            margin-top: 30px;
-            text-align: center;
-            font-size: 14px;
-            color: #aaa;
+            margin-top: 20px;
         }}
         </style>
         </head>
 
         <body>
 
-        <div class="grid">
-        """)
-
-        f.write("<div class='card'>" + figs[0].to_html(full_html=False, include_plotlyjs=True) + "</div>")
-
-        for fig in figs[1:]:
-            f.write("<div class='card'>" + fig.to_html(full_html=False, include_plotlyjs=False) + "</div>")
-
-        f.write(f"""
+        <div class="nav">
+            <a href="index.html">Home</a>
+            <a href="franquias.html">Franquias</a>
+            <a href="paises.html">Países</a>
+            <a href="consoles.html">Consoles</a>
+            <a href="nei.html">NEI</a>
         </div>
 
-        <div class="footer">
+        <div class="card">
+        {fig.to_html(full_html=False, include_plotlyjs='cdn')}
+        </div>
+
+        <p style="text-align:center; color:#aaa;">
         Atualizado em {agora}
-        </div>
+        </p>
 
         </body>
         </html>
         """)
 
 
-def gerar_html_erro(msg):
+def gerar_index():
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write(f"""
+        f.write("""
         <html>
-        <body style='background:#1c1c1c; color:white; text-align:center; padding-top:100px;'>
-        <h1>Erro</h1>
-        <p>{msg}</p>
+        <body style="background:#1c1c1c; color:white; font-family:sans-serif; text-align:center; padding-top:100px;">
+        <h1>Dashboard</h1>
+
+        <a href="franquias.html">Franquias</a><br><br>
+        <a href="paises.html">Países</a><br><br>
+        <a href="consoles.html">Consoles</a><br><br>
+        <a href="nei.html">NEI</a>
+
         </body>
         </html>
         """)
@@ -211,8 +206,15 @@ def gerar_html_erro(msg):
 # EXECUÇÃO
 df_jogos, df_consoles = carregar_dados_notion()
 
-if df_jogos is None:
-    gerar_html_erro(df_consoles)
-else:
-    figs = gerar_graficos(df_jogos, df_consoles)
-    gerar_html(figs)
+if df_jogos is not None:
+    fig1 = criar_grafico(df_jogos, "Franquia", "Franquias")
+    fig2 = criar_grafico(df_jogos, "Pais", "Países")
+    fig3 = criar_grafico_console(df_consoles)
+    fig4 = criar_grafico(df_jogos, "NEI", "Experiência (NEI)")
+
+    gerar_pagina(fig1, "franquias.html", "Franquias")
+    gerar_pagina(fig2, "paises.html", "Países")
+    gerar_pagina(fig3, "consoles.html", "Consoles")
+    gerar_pagina(fig4, "nei.html", "NEI")
+
+    gerar_index()
