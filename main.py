@@ -262,82 +262,6 @@ def gerar_index():
             </a>
 
             <a href="nei.html" class="btn">
-                <i>def gerar_index():
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write("""
-        <html>
-        <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-        <style>
-        body {
-            background: #1c1c1c;
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .btn {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 140px;
-            height: 140px;
-            border-radius: 20px;
-            border: 3px solid transparent;
-            background: linear-gradient(135deg, #444, #777) border-box;
-            color: white;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-
-        .btn span {
-            font-size: 14px;
-            margin-top: 8px;
-            color: #ccc;
-        }
-
-        .btn i {
-            font-size: 32px;
-        }
-
-        .btn:hover {
-            transform: scale(1.08);
-            filter: brightness(1.2);
-        }
-
-        </style>
-        </head>
-
-        <body>
-
-        <div class="grid">
-            <a href="franquias.html" class="btn">
-                <i>🎮</i>
-                <span>Franquias</span>
-            </a>
-
-            <a href="paises.html" class="btn">
-                <i>🌍</i>
-                <span>Países</span>
-            </a>
-
-            <a href="consoles.html" class="btn">
-                <i>🕹️</i>
-                <span>Consoles</span>
-            </a>
-
-            <a href="nei.html" class="btn">
                 <i>📊</i>
                 <span>Experiência</span>
             </a>
@@ -345,15 +269,7 @@ def gerar_index():
 
         </body>
         </html>
-        """)</i>
-                <span>Experiência</span>
-            </a>
-        </div>
-
-        </body>
-        </html>
         """)
-
 
 # EXECUÇÃO
 df_jogos, df_consoles = carregar_dados_notion()
