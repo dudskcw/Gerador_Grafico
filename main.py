@@ -5,7 +5,7 @@ import datetime
 import json
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-DATABASE_ID = os.environ.get("DATABASE_ID")
+DATABASE_ID  = os.environ.get("DATABASE_ID")
 
 if not NOTION_TOKEN or not DATABASE_ID:
     raise ValueError("NOTION_TOKEN ou DATABASE_ID não configurados.")
@@ -22,7 +22,59 @@ PALETTE = [
     "#63e6be","#74c0fc","#e599f7","#ffa8a8","#ffe066",
 ]
 
-# ── CSS base compartilhado ─────────────────────────────────
+# ── Mapa sigla/nome → emoji de bandeira ───────────────────
+COUNTRY_EMOJI = {
+    "BR": "🇧🇷", "BRASIL": "🇧🇷", "BRAZIL": "🇧🇷",
+    "US": "🇺🇸", "USA": "🇺🇸", "EUA": "🇺🇸", "ESTADOS UNIDOS": "🇺🇸",
+    "JP": "🇯🇵", "JAPÃO": "🇯🇵", "JAPAN": "🇯🇵", "JAPAO": "🇯🇵",
+    "UK": "🇬🇧", "GB": "🇬🇧", "REINO UNIDO": "🇬🇧",
+    "DE": "🇩🇪", "ALEMANHA": "🇩🇪", "GERMANY": "🇩🇪",
+    "FR": "🇫🇷", "FRANCA": "🇫🇷", "FRANCE": "🇫🇷", "FRANCA": "🇫🇷",
+    "CA": "🇨🇦", "CANADA": "🇨🇦", "CANADÁ": "🇨🇦",
+    "AU": "🇦🇺", "AUSTRALIA": "🇦🇺", "AUSTRÁLIA": "🇦🇺",
+    "KR": "🇰🇷", "COREIA": "🇰🇷", "KOREA": "🇰🇷", "COREIA DO SUL": "🇰🇷",
+    "CN": "🇨🇳", "CHINA": "🇨🇳",
+    "ES": "🇪🇸", "ESPANHA": "🇪🇸", "SPAIN": "🇪🇸",
+    "IT": "🇮🇹", "ITALIA": "🇮🇹", "ITÁLIA": "🇮🇹", "ITALY": "🇮🇹",
+    "SE": "🇸🇪", "SUECIA": "🇸🇪", "SUÉCIA": "🇸🇪", "SWEDEN": "🇸🇪",
+    "FI": "🇫🇮", "FINLANDIA": "🇫🇮", "FINLÂNDIA": "🇫🇮", "FINLAND": "🇫🇮",
+    "NL": "🇳🇱", "HOLANDA": "🇳🇱", "PAÍSES BAIXOS": "🇳🇱", "NETHERLANDS": "🇳🇱",
+    "PL": "🇵🇱", "POLONIA": "🇵🇱", "POLÔNIA": "🇵🇱", "POLAND": "🇵🇱",
+    "RU": "🇷🇺", "RUSSIA": "🇷🇺", "RÚSSIA": "🇷🇺",
+    "AR": "🇦🇷", "ARGENTINA": "🇦🇷",
+    "MX": "🇲🇽", "MEXICO": "🇲🇽", "MÉXICO": "🇲🇽",
+    "PT": "🇵🇹", "PORTUGAL": "🇵🇹",
+    "CZ": "🇨🇿", "CHEQUIA": "🇨🇿", "REPÚBLICA TCHECA": "🇨🇿",
+    "HU": "🇭🇺", "HUNGRIA": "🇭🇺", "HUNGARY": "🇭🇺",
+    "UA": "🇺🇦", "UCRANIA": "🇺🇦", "UCRÂNIA": "🇺🇦", "UKRAINE": "🇺🇦",
+    "NO": "🇳🇴", "NORUEGA": "🇳🇴", "NORWAY": "🇳🇴",
+    "DK": "🇩🇰", "DINAMARCA": "🇩🇰", "DENMARK": "🇩🇰",
+    "BE": "🇧🇪", "BÉLGICA": "🇧🇪", "BELGICA": "🇧🇪", "BELGIUM": "🇧🇪",
+    "CH": "🇨🇭", "SUÍÇA": "🇨🇭", "SUICA": "🇨🇭", "SWITZERLAND": "🇨🇭",
+    "AT": "🇦🇹", "ÁUSTRIA": "🇦🇹", "AUSTRIA": "🇦🇹",
+    "NZ": "🇳🇿", "NOVA ZELÂNDIA": "🇳🇿", "NEW ZEALAND": "🇳🇿",
+    "ZA": "🇿🇦", "ÁFRICA DO SUL": "🇿🇦", "SOUTH AFRICA": "🇿🇦",
+    "IN": "🇮🇳", "ÍNDIA": "🇮🇳", "INDIA": "🇮🇳",
+    "SG": "🇸🇬", "SINGAPURA": "🇸🇬", "SINGAPORE": "🇸🇬",
+    "TW": "🇹🇼", "TAIWAN": "🇹🇼",
+    "IL": "🇮🇱", "ISRAEL": "🇮🇱",
+    "TR": "🇹🇷", "TURQUIA": "🇹🇷", "TURKEY": "🇹🇷",
+    "CL": "🇨🇱", "CHILE": "🇨🇱",
+    "CO": "🇨🇴", "COLÔMBIA": "🇨🇴", "COLOMBIA": "🇨🇴",
+    "RO": "🇷🇴", "ROMÊNIA": "🇷🇴", "ROMANIA": "🇷🇴",
+    "GR": "🇬🇷", "GRÉCIA": "🇬🇷", "GREECE": "🇬🇷",
+    "SK": "🇸🇰", "ESLOVÁQUIA": "🇸🇰", "SLOVAKIA": "🇸🇰",
+}
+
+def pais_com_emoji(nome):
+    chave = nome.upper().strip()
+    emoji = COUNTRY_EMOJI.get(chave, "")
+    if emoji:
+        return f"{emoji} {nome}"
+    return nome
+
+
+# ── CSS compartilhado ─────────────────────────────────────
 SHARED_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
 
@@ -41,117 +93,23 @@ html, body {
     100% { background-position: 0 0; }
 }
 
-/* ── SIDEBAR ── */
-.sidebar {
+/* ── HOME BUTTON (páginas de gráfico) ── */
+.home-btn {
     position: fixed;
-    top: 0; left: 0;
-    height: 100vh;
-    width: 56px;
-    background: #140f0f;
-    border-right: 1px solid #2e2828;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 18px 0;
-    gap: 8px;
+    top: 16px; left: 16px;
     z-index: 100;
-    transition: width .3s ease;
-    overflow: hidden;
-}
-
-.sidebar.open {
-    width: 260px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    padding: 14px 12px;
-    gap: 10px;
-    height: auto;
-    bottom: auto;
-    border-radius: 0 0 16px 0;
-    border-bottom: 1px solid #2e2828;
-}
-
-.sidebar-toggle {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    border: none;
-    background: #1a1616;
-    color: #8a7f7f;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-    transition: color .2s;
-    margin-bottom: 4px;
-}
-.sidebar-toggle:hover { color: #fff; }
-.sidebar.open .sidebar-toggle { margin-bottom: 0; }
-
-.sidebar-brand {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: #5a5050;
-    letter-spacing: 2px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .2s;
-    flex: 1;
-    align-self: center;
-}
-.sidebar.open .sidebar-brand { opacity: 1; }
-
-.sidebar-divider {
-    width: 32px; height: 1px;
-    background: #2e2828;
-    flex-shrink: 0;
-    transition: width .3s;
-}
-.sidebar.open .sidebar-divider { display: none; }
-
-/* ── NAV BUTTONS inside sidebar ── */
-.glow-btn {
-    position: relative;
-    z-index: 0;
-    width: 36px; height: 36px;
-    padding: 0;
+    width: 40px; height: 40px;
     background: #111;
-    color: #e8e0d8;
     border: none;
-    border-radius: 8px;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    border-radius: 10px;
+    color: #e8e0d8;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: color .2s, width .3s, padding .3s;
-    white-space: nowrap;
-    overflow: hidden;
-    flex-shrink: 0;
+    position: fixed;
 }
-
-.sidebar.open .glow-btn {
-    width: auto;
-    padding: 0 14px;
-    height: 36px;
-}
-
-.glow-btn .btn-label {
-    display: none;
-    font-size: 13px;
-}
-.sidebar.open .glow-btn .btn-label { display: inline; }
-
-.glow-btn.active { color: #fff; }
-
-.glow-btn::before {
+.home-btn::before {
     content: '';
     background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
     position: absolute;
@@ -164,35 +122,26 @@ html, body {
     animation: glowing 20s linear infinite;
     opacity: 0;
     transition: opacity .3s;
-    border-radius: 8px;
+    border-radius: 10px;
 }
-.glow-btn::after {
+.home-btn::after {
     content: '';
     z-index: -1;
     position: absolute;
     width: 100%; height: 100%;
     background: #111;
     left: 0; top: 0;
-    border-radius: 8px;
+    border-radius: 10px;
 }
-.glow-btn:hover::before,
-.glow-btn.active::before { opacity: 1; }
-.glow-btn:active { color: #000; }
-.glow-btn:active::after { background: transparent; }
-
-/* ── MAIN CONTENT offset ── */
-.main {
-    margin-left: 56px;
-    min-height: 100vh;
-}
+.home-btn:hover::before { opacity: 1; }
 
 /* ── PAGE HEADER ── */
 .page-header {
     text-align: center;
-    padding: 40px 24px 12px;
+    padding: 52px 24px 16px;
 }
 .page-header h1 {
-    font-size: 34px;
+    font-size: 36px;
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -209,8 +158,8 @@ html, body {
 
 /* ── CHART LAYOUT ── */
 .chart-outer {
-    max-width: 900px;
-    margin: 28px auto;
+    max-width: 1000px;
+    margin: 24px auto;
     padding: 0 20px 60px;
 }
 
@@ -218,11 +167,10 @@ html, body {
     background: #1a1616;
     border: 1px solid #2e2828;
     border-radius: 16px;
-    padding: 28px 24px;
+    padding: 32px 28px;
     position: relative;
-    overflow: hidden;
     display: flex;
-    gap: 32px;
+    gap: 36px;
     align-items: flex-start;
 }
 .card::before {
@@ -234,10 +182,10 @@ html, body {
     pointer-events: none;
 }
 
-/* grafico tamanho fixo */
+/* gráfico — dobro do tamanho anterior (560px) */
 .chart-col {
     flex-shrink: 0;
-    width: 280px;
+    width: 560px;
     position: relative;
 }
 
@@ -250,29 +198,30 @@ html, body {
 }
 .chart-center-label .total {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 26px;
+    font-size: 36px;
     font-weight: 700;
     color: #fff;
     line-height: 1;
 }
 .chart-center-label .total-label {
-    font-size: 10px;
+    font-size: 12px;
     color: #5a5050;
     letter-spacing: 2px;
     text-transform: uppercase;
-    margin-top: 4px;
+    margin-top: 5px;
 }
 
-/* legenda scroll independente */
+/* legenda — scroll independente, altura fixa */
 .legend-col {
     flex: 1;
     min-width: 0;
-    max-height: 280px;
+    max-height: 560px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 7px;
     padding-right: 4px;
+    align-self: stretch;
 }
 
 .legend-col::-webkit-scrollbar { width: 4px; }
@@ -283,7 +232,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 12px;
+    padding: 10px 13px;
     background: #201c1c;
     border: 1px solid #2e2828;
     border-radius: 8px;
@@ -296,7 +245,7 @@ html, body {
 .legend-item.hidden { opacity: .35; }
 
 .legend-swatch {
-    width: 10px; height: 10px;
+    width: 11px; height: 11px;
     border-radius: 3px;
     flex-shrink: 0;
 }
@@ -344,7 +293,7 @@ html, body {
 
 .greeting {
     text-align: center;
-    margin-bottom: 48px;
+    margin-bottom: 52px;
 }
 .greeting .time-msg {
     font-family: 'Share Tech Mono', monospace;
@@ -355,7 +304,7 @@ html, body {
     margin-bottom: 10px;
 }
 .greeting h1 {
-    font-size: clamp(28px, 5vw, 52px);
+    font-size: clamp(28px, 5vw, 54px);
     font-weight: 700;
     letter-spacing: 2px;
     color: #fff;
@@ -372,18 +321,16 @@ html, body {
     font-size: 13px;
     color: #5a5050;
     letter-spacing: 2px;
-    margin-top: 12px;
+    margin-top: 14px;
 }
-.greeting .count-line strong {
-    color: #8a7f7f;
-}
+.greeting .count-line strong { color: #8a7f7f; }
 
 .index-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     width: 100%;
-    max-width: 520px;
+    max-width: 540px;
 }
 
 .index-btn {
@@ -396,7 +343,7 @@ html, body {
     border: none;
     border-radius: 14px;
     font-family: 'Rajdhani', sans-serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
@@ -439,50 +386,40 @@ html, body {
 .index-btn:hover { color: #fff; }
 .index-btn:active { color: #000; }
 .index-btn:active::after { background: transparent; }
+
+/* ── MOBILE ── */
+@media (max-width: 700px) {
+    .card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 24px;
+        padding: 20px 16px;
+    }
+
+    .chart-col {
+        width: 100%;
+    }
+
+    /* legenda em baixo, altura fixa com scroll */
+    .legend-col {
+        max-height: 260px;
+        overflow-y: auto;
+    }
+
+    .page-header h1 { font-size: 26px; }
+
+    .index-grid { max-width: 100%; }
+    .index-btn  { height: 76px; font-size: 14px; }
+}
 """
 
-# ── Sidebar ───────────────────────────────────────────────
-NAV_LINKS = [
-    ("index.html",     "🏠", "Home"),
-    ("franquias.html", "🎮", "Franquias"),
-    ("paises.html",    "🌍", "Países"),
-    ("consoles.html",  "🕹️",  "Consoles"),
-    ("nei.html",       "📊", "Experiência"),
-]
 
-SIDEBAR_JS = """
-<script>
-(function(){
-    var sb = document.getElementById('sidebar');
-    var toggle = document.getElementById('sb-toggle');
-    toggle.addEventListener('click', function(e){
-        e.stopPropagation();
-        sb.classList.toggle('open');
-    });
-    document.addEventListener('click', function(e){
-        if (!sb.contains(e.target)) sb.classList.remove('open');
-    });
-})();
-</script>
-"""
+# ── Botão home (para páginas de gráfico) ─────────────────
+HOME_BTN = '<a href="index.html" class="home-btn" title="Home">🏠</a>'
 
-def build_sidebar(active_href):
-    links_html = ""
-    for href, icon, label in NAV_LINKS:
-        cls = "glow-btn active" if href == active_href else "glow-btn"
-        links_html += f'<a href="{href}" class="{cls}">{icon}<span class="btn-label">{label}</span></a>\n'
-    return f"""
-<nav class="sidebar" id="sidebar">
-  <button class="sidebar-toggle" id="sb-toggle" title="Menu">&#9776;</button>
-  <span class="sidebar-brand">// GAME.DB</span>
-  <div class="sidebar-divider"></div>
-  {links_html}
-</nav>
-{SIDEBAR_JS}
-"""
 
-# ── Página de gráfico ─────────────────────────────────────
-def build_chart_page(title, subtitle, counts_dict, active_href, show_center=True):
+# ── Gerar página de gráfico ───────────────────────────────
+def build_chart_page(title, subtitle, counts_dict, center_label="tipos", show_center=True):
     agora  = datetime.datetime.now().strftime("%d/%m/%Y às %H:%M")
     labels = list(counts_dict.keys())
     counts = list(counts_dict.values())
@@ -494,14 +431,12 @@ def build_chart_page(title, subtitle, counts_dict, active_href, show_center=True
     counts_json = json.dumps(counts)
     colors_json = json.dumps(colors)
 
-    sidebar = build_sidebar(active_href)
-
     center_html = ""
     if show_center:
         center_html = f"""
       <div class="chart-center-label">
         <div class="total">{unique}</div>
-        <div class="total-label">tipos</div>
+        <div class="total-label">{center_label}</div>
       </div>"""
 
     return f"""<!DOCTYPE html>
@@ -517,29 +452,25 @@ def build_chart_page(title, subtitle, counts_dict, active_href, show_center=True
 </head>
 <body>
 
-{sidebar}
+{HOME_BTN}
 
-<div class="main">
+<div class="page-header">
+  <h1>{title}</h1>
+  <p class="sub">{subtitle}</p>
+</div>
 
-  <div class="page-header">
-    <h1>{title}</h1>
-    <p class="sub">{subtitle}</p>
-  </div>
+<div class="chart-outer">
+  <div class="card">
 
-  <div class="chart-outer">
-    <div class="card">
-
-      <div class="chart-col">
-        <canvas id="myChart"></canvas>
-        {center_html}
-      </div>
-
-      <div class="legend-col" id="legend"></div>
-
+    <div class="chart-col">
+      <canvas id="myChart"></canvas>
+      {center_html}
     </div>
-    <p class="timestamp">ATUALIZADO EM {agora}</p>
-  </div>
 
+    <div class="legend-col" id="legend"></div>
+
+  </div>
+  <p class="timestamp">ATUALIZADO EM {agora}</p>
 </div>
 
 <script>
@@ -564,7 +495,7 @@ const chart = new Chart(ctx, {{
       backgroundColor: COLORS,
       borderColor: '#201c1c',
       borderWidth: 3,
-      hoverOffset: 8,
+      hoverOffset: 10,
     }}]
   }},
   options: {{
@@ -631,8 +562,6 @@ def gerar_index(total_jogos):
     else:
         saudacao = "Boa noite"
 
-    sidebar = build_sidebar("index.html")
-
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -646,25 +575,21 @@ def gerar_index(total_jogos):
 </head>
 <body>
 
-{sidebar}
+<div class="index-wrap">
 
-<div class="main">
-  <div class="index-wrap">
-
-    <div class="greeting">
-      <p class="time-msg">// game.db</p>
-      <h1>{saudacao}, <span>Eduardo!</span></h1>
-      <p class="count-line">você já finalizou um total de <strong>{total_jogos} jogos</strong></p>
-    </div>
-
-    <div class="index-grid">
-      <a href="franquias.html" class="index-btn"><span class="icon">🎮</span> Franquias</a>
-      <a href="paises.html"    class="index-btn"><span class="icon">🌍</span> Países</a>
-      <a href="consoles.html"  class="index-btn"><span class="icon">🕹️</span>  Consoles</a>
-      <a href="nei.html"       class="index-btn"><span class="icon">📊</span> Experiência</a>
-    </div>
-
+  <div class="greeting">
+    <p class="time-msg">// game.db</p>
+    <h1>{saudacao}, <span>Eduardo!</span></h1>
+    <p class="count-line">você já finalizou um total de <strong>{total_jogos} jogos</strong></p>
   </div>
+
+  <div class="index-grid">
+    <a href="franquias.html" class="index-btn"><span class="icon">🎮</span> Franquias</a>
+    <a href="paises.html"    class="index-btn"><span class="icon">🌍</span> Países</a>
+    <a href="consoles.html"  class="index-btn"><span class="icon">🕹️</span> Consoles</a>
+    <a href="nei.html"       class="index-btn"><span class="icon">📊</span> Experiência</a>
+  </div>
+
 </div>
 
 </body>
@@ -744,33 +669,35 @@ else:
         return {k: int(v) for k, v in series.value_counts().items()}
 
     franquias = to_counts(df_jogos["Franquia"])
-    paises    = to_counts(df_jogos["Pais"])
-    nei       = to_counts(df_jogos["NEI"])
-    consoles  = to_counts(df_consoles["Console"])
-    total     = len(df_jogos)
+    paises_raw = to_counts(df_jogos["Pais"])
+    # aplica emoji nos países
+    paises = {pais_com_emoji(k): v for k, v in paises_raw.items()}
+    nei      = to_counts(df_jogos["NEI"])
+    consoles = to_counts(df_consoles["Console"])
+    total    = len(df_jogos)
 
     with open("franquias.html", "w", encoding="utf-8") as f:
         f.write(build_chart_page(
             "Franquias", f"{total} jogos no acervo",
-            franquias, "franquias.html", show_center=True
+            franquias, center_label="franquias", show_center=True
         ))
 
     with open("paises.html", "w", encoding="utf-8") as f:
         f.write(build_chart_page(
             "Países", "origem dos jogos",
-            paises, "paises.html", show_center=True
+            paises, center_label="países", show_center=True
         ))
 
     with open("consoles.html", "w", encoding="utf-8") as f:
         f.write(build_chart_page(
             "Consoles", "plataformas do acervo",
-            consoles, "consoles.html", show_center=True
+            consoles, center_label="consoles", show_center=True
         ))
 
     with open("nei.html", "w", encoding="utf-8") as f:
         f.write(build_chart_page(
             "Experiência", "nível de interesse (NEI)",
-            nei, "nei.html", show_center=False
+            nei, show_center=False
         ))
 
     gerar_index(total)
