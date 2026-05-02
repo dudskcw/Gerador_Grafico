@@ -74,15 +74,36 @@ COUNTRY_EMOJI = {
     "RO": "🇷🇴", "ROMÊNIA": "🇷🇴", "ROMANIA": "🇷🇴",
     "GR": "🇬🇷", "GRÉCIA": "🇬🇷", "GREECE": "🇬🇷",
     "SK": "🇸🇰", "ESLOVÁQUIA": "🇸🇰", "SLOVAKIA": "🇸🇰",
+    "PE": "🇵🇪", "PERU": "🇵🇪",
+}
+
+# Mapa de sigla ISO → nome em português
+SIGLA_PARA_NOME = {
+    "BR": "Brasil", "US": "Estados Unidos", "USA": "Estados Unidos", "EUA": "Estados Unidos",
+    "JP": "Japão", "UK": "Reino Unido", "GB": "Reino Unido",
+    "DE": "Alemanha", "FR": "França", "CA": "Canadá",
+    "AU": "Austrália", "KR": "Coreia do Sul", "CN": "China",
+    "ES": "Espanha", "IT": "Itália", "SE": "Suécia",
+    "FI": "Finlândia", "NL": "Holanda", "PL": "Polônia",
+    "RU": "Rússia", "AR": "Argentina", "MX": "México",
+    "PT": "Portugal", "CZ": "República Tcheca", "HU": "Hungria",
+    "UA": "Ucrânia", "NO": "Noruega", "DK": "Dinamarca",
+    "BE": "Bélgica", "CH": "Suíça", "AT": "Áustria",
+    "NZ": "Nova Zelândia", "ZA": "África do Sul", "IN": "Índia",
+    "SG": "Singapura", "TW": "Taiwan", "IL": "Israel",
+    "TR": "Turquia", "CL": "Chile", "CO": "Colômbia",
+    "RO": "Romênia", "GR": "Grécia", "SK": "Eslováquia",
+    "PE": "Peru",
 }
 
 def pais_com_emoji(nome):
-    """Adiciona emoji de bandeira ao nome do país se encontrado no mapa."""
+    """Converte sigla ou nome completo para emoji + nome legível."""
     chave = nome.strip().upper()
     emoji = COUNTRY_EMOJI.get(chave, "")
+    nome_exibicao = SIGLA_PARA_NOME.get(chave, nome.strip())
     if emoji:
-        return f"{emoji} {nome.strip()}"
-    return nome.strip()
+        return f"{emoji} {nome_exibicao}"
+    return nome_exibicao
 
 def explodir_multivalor(series, separador=", "):
     """
