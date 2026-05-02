@@ -4,6 +4,16 @@ import pandas as pd
 import datetime
 import json
 
+try:
+    import pytz
+    TZ_BR = pytz.timezone("America/Sao_Paulo")
+    def now_br():
+        return datetime.datetime.now(TZ_BR)
+except ImportError:
+    # fallback sem pytz — UTC-3 manual
+    def now_br():
+        return datetime.datetime.utcnow() - datetime.timedelta(hours=3)
+
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 DATABASE_ID  = os.environ.get("DATABASE_ID")
 
@@ -29,7 +39,7 @@ COUNTRY_EMOJI = {
     "JP": "🇯🇵", "JAPÃO": "🇯🇵", "JAPAN": "🇯🇵", "JAPAO": "🇯🇵",
     "UK": "🇬🇧", "GB": "🇬🇧", "REINO UNIDO": "🇬🇧",
     "DE": "🇩🇪", "ALEMANHA": "🇩🇪", "GERMANY": "🇩🇪",
-    "FR": "🇫🇷", "FRANCA": "🇫🇷", "FRANCE": "🇫🇷", "FRANCA": "🇫🇷",
+    "FR": "🇫🇷", "FRANCA": "🇫🇷", "FRANCE": "🇫🇷", "FRANÇA": "🇫🇷",
     "CA": "🇨🇦", "CANADA": "🇨🇦", "CANADÁ": "🇨🇦",
     "AU": "🇦🇺", "AUSTRALIA": "🇦🇺", "AUSTRÁLIA": "🇦🇺",
     "KR": "🇰🇷", "COREIA": "🇰🇷", "KOREA": "🇰🇷", "COREIA DO SUL": "🇰🇷",
@@ -67,11 +77,20 @@ COUNTRY_EMOJI = {
 }
 
 def pais_com_emoji(nome):
-    chave = nome.upper().strip()
+    """Adiciona emoji de bandeira ao nome do país se encontrado no mapa."""
+    chave = nome.strip().upper()
     emoji = COUNTRY_EMOJI.get(chave, "")
     if emoji:
-        return f"{emoji} {nome}"
-    return nome
+        return f"{emoji} {nome.strip()}"
+    return nome.strip()
+
+def explodir_multivalor(series, separador=", "):
+    """
+    Transforma 'Brasil, Japão' em duas linhas separadas.
+    Funciona para países, franquias e qualquer campo que possa
+    ter múltiplos valores separados por vírgula.
+    """
+    return series.str.split(separador).explode().str.strip()
 
 
 # ── CSS compartilhado ─────────────────────────────────────
@@ -93,7 +112,7 @@ html, body {
     100% { background-position: 0 0; }
 }
 
-/* ── HOME BUTTON (páginas de gráfico) ── */
+/* ── HOME BUTTON ── */
 .home-btn {
     position: fixed;
     top: 16px; left: 16px;
@@ -107,7 +126,6 @@ html, body {
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     text-decoration: none;
-    position: fixed;
 }
 .home-btn::before {
     content: '';
@@ -158,7 +176,7 @@ html, body {
 
 /* ── CHART LAYOUT ── */
 .chart-outer {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 24px auto;
     padding: 0 20px 60px;
 }
@@ -167,10 +185,10 @@ html, body {
     background: #1a1616;
     border: 1px solid #2e2828;
     border-radius: 16px;
-    padding: 32px 28px;
+    padding: 32px 36px;
     position: relative;
     display: flex;
-    gap: 36px;
+    gap: 40px;
     align-items: flex-start;
 }
 .card::before {
@@ -182,10 +200,10 @@ html, body {
     pointer-events: none;
 }
 
-/* gráfico — dobro do tamanho anterior (560px) */
+/* gráfico — 420px (560 * 0.75) */
 .chart-col {
     flex-shrink: 0;
-    width: 560px;
+    width: 420px;
     position: relative;
 }
 
@@ -198,7 +216,7 @@ html, body {
 }
 .chart-center-label .total {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 700;
     color: #fff;
     line-height: 1;
@@ -211,16 +229,16 @@ html, body {
     margin-top: 5px;
 }
 
-/* legenda — scroll independente, altura fixa */
+/* legenda — scroll independente */
 .legend-col {
     flex: 1;
     min-width: 0;
-    max-height: 560px;
+    max-height: 420px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 7px;
-    padding-right: 4px;
+    padding-right: 6px;
     align-self: stretch;
 }
 
@@ -232,7 +250,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 13px;
+    padding: 10px 14px;
     background: #201c1c;
     border: 1px solid #2e2828;
     border-radius: 8px;
@@ -395,41 +413,35 @@ html, body {
         gap: 24px;
         padding: 20px 16px;
     }
-
-    .chart-col {
-        width: 100%;
-    }
-
-    /* legenda em baixo, altura fixa com scroll */
-    .legend-col {
-        max-height: 260px;
-        overflow-y: auto;
-    }
-
+    .chart-col { width: 100%; }
+    .legend-col { max-height: 260px; }
     .page-header h1 { font-size: 26px; }
-
     .index-grid { max-width: 100%; }
     .index-btn  { height: 76px; font-size: 14px; }
 }
 """
 
-
-# ── Botão home (para páginas de gráfico) ─────────────────
-HOME_BTN = '<a href="index.html" class="home-btn" title="Home">🏠</a>'
+HOME_BTN = '<a href="index.html" class="home-btn" title="Voltar para Home">🏠</a>'
 
 
 # ── Gerar página de gráfico ───────────────────────────────
 def build_chart_page(title, subtitle, counts_dict, center_label="tipos", show_center=True):
-    agora  = datetime.datetime.now().strftime("%d/%m/%Y às %H:%M")
+    agora = now_br().strftime("%d/%m/%Y às %H:%M")
+
     labels = list(counts_dict.keys())
     counts = list(counts_dict.values())
     colors = [PALETTE[i % len(PALETTE)] for i in range(len(labels))]
     total  = sum(counts)
-    unique = len(labels)
 
-    labels_json = json.dumps(labels, ensure_ascii=False)
-    counts_json = json.dumps(counts)
-    colors_json = json.dumps(colors)
+    # índice do "Não definido" para ocultar por padrão
+    nao_def_indices = [i for i, l in enumerate(labels) if l.strip().lower() == "não definido"]
+    # contagem de tipos excluindo "não definido"
+    unique = len([l for l in labels if l.strip().lower() != "não definido"])
+
+    labels_json   = json.dumps(labels, ensure_ascii=False)
+    counts_json   = json.dumps(counts)
+    colors_json   = json.dumps(colors)
+    hidden_init   = json.dumps(nao_def_indices)
 
     center_html = ""
     if show_center:
@@ -470,7 +482,7 @@ def build_chart_page(title, subtitle, counts_dict, center_label="tipos", show_ce
     <div class="legend-col" id="legend"></div>
 
   </div>
-  <p class="timestamp">ATUALIZADO EM {agora}</p>
+  <p class="timestamp">ATUALIZADO EM {agora} (HORÁRIO DE BRASÍLIA)</p>
 </div>
 
 <script>
@@ -479,7 +491,9 @@ const COUNTS = {counts_json};
 const COLORS = {colors_json};
 const TOTAL  = {total};
 
-const hidden = new Set();
+// inicia com "Não definido" já oculto
+const hidden = new Set({hidden_init});
+
 const ctx = document.getElementById('myChart').getContext('2d');
 
 function buildDataset() {{
@@ -552,15 +566,9 @@ renderLegend();
 </html>"""
 
 
-# ── Index ─────────────────────────────────────────────────
+# ── Index com saudação via JS (respeita fuso do usuário) ──
 def gerar_index(total_jogos):
-    hora = datetime.datetime.now().hour
-    if hora < 12:
-        saudacao = "Bom dia"
-    elif hora < 18:
-        saudacao = "Boa tarde"
-    else:
-        saudacao = "Boa noite"
+    agora = now_br().strftime("%d/%m/%Y às %H:%M")
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
@@ -579,7 +587,7 @@ def gerar_index(total_jogos):
 
   <div class="greeting">
     <p class="time-msg">// game.db</p>
-    <h1>{saudacao}, <span>Eduardo!</span></h1>
+    <h1 id="greeting-line"><span>Eduardo!</span></h1>
     <p class="count-line">você já finalizou um total de <strong>{total_jogos} jogos</strong></p>
   </div>
 
@@ -591,6 +599,16 @@ def gerar_index(total_jogos):
   </div>
 
 </div>
+
+<script>
+// saudação baseada no horário local do navegador do usuário
+(function() {{
+  var h = new Date().getHours();
+  var s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  document.getElementById('greeting-line').innerHTML =
+    s + ', <span>Eduardo!</span>';
+}})();
+</script>
 
 </body>
 </html>""")
@@ -607,7 +625,8 @@ def get_value(props, nome):
                 if prop["type"] == "select":
                     return prop["select"]["name"] if prop["select"] else "Não definido"
                 elif prop["type"] == "multi_select":
-                    return ", ".join([x["name"] for x in prop["multi_select"]]) or "Não definido"
+                    vals = [x["name"] for x in prop["multi_select"]]
+                    return ", ".join(vals) if vals else "Não definido"
                 elif prop["type"] == "title":
                     return prop["title"][0]["plain_text"] if prop["title"] else "Sem título"
                 elif prop["type"] == "rich_text":
@@ -659,22 +678,32 @@ def carregar_dados_notion():
     return pd.DataFrame(jogos), pd.DataFrame(consoles, columns=["Console"]), None
 
 
+def to_counts_exploded(series, apply_emoji_fn=None):
+    """
+    Explode valores separados por vírgula em linhas individuais,
+    conta cada um e retorna dict {label: count}.
+    Aplica função de emoji se fornecida.
+    """
+    exploded = explodir_multivalor(series)
+    counts   = exploded.value_counts()
+    result   = {}
+    for k, v in counts.items():
+        label = apply_emoji_fn(k) if apply_emoji_fn else k
+        result[label] = int(v)
+    return result
+
+
 # ── Execução ──────────────────────────────────────────────
 df_jogos, df_consoles, err = carregar_dados_notion()
 
 if err:
     print(f"Erro: {err}")
 else:
-    def to_counts(series):
-        return {k: int(v) for k, v in series.value_counts().items()}
-
-    franquias = to_counts(df_jogos["Franquia"])
-    paises_raw = to_counts(df_jogos["Pais"])
-    # aplica emoji nos países
-    paises = {pais_com_emoji(k): v for k, v in paises_raw.items()}
-    nei      = to_counts(df_jogos["NEI"])
-    consoles = to_counts(df_consoles["Console"])
-    total    = len(df_jogos)
+    franquias = to_counts_exploded(df_jogos["Franquia"])
+    paises    = to_counts_exploded(df_jogos["Pais"], apply_emoji_fn=pais_com_emoji)
+    nei       = to_counts_exploded(df_jogos["NEI"])
+    consoles  = {k: int(v) for k, v in df_consoles["Console"].value_counts().items()}
+    total     = len(df_jogos)
 
     with open("franquias.html", "w", encoding="utf-8") as f:
         f.write(build_chart_page(

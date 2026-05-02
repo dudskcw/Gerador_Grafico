@@ -24,7 +24,7 @@ html, body {
     100% { background-position: 0 0; }
 }
 
-/* ── HOME BUTTON (páginas de gráfico) ── */
+/* ── HOME BUTTON ── */
 .home-btn {
     position: fixed;
     top: 16px; left: 16px;
@@ -38,7 +38,6 @@ html, body {
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     text-decoration: none;
-    position: fixed;
 }
 .home-btn::before {
     content: '';
@@ -89,7 +88,7 @@ html, body {
 
 /* ── CHART LAYOUT ── */
 .chart-outer {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 24px auto;
     padding: 0 20px 60px;
 }
@@ -98,10 +97,10 @@ html, body {
     background: #1a1616;
     border: 1px solid #2e2828;
     border-radius: 16px;
-    padding: 32px 28px;
+    padding: 32px 36px;
     position: relative;
     display: flex;
-    gap: 36px;
+    gap: 40px;
     align-items: flex-start;
 }
 .card::before {
@@ -113,10 +112,10 @@ html, body {
     pointer-events: none;
 }
 
-/* gráfico — dobro do tamanho anterior (560px) */
+/* gráfico — 420px (560 * 0.75) */
 .chart-col {
     flex-shrink: 0;
-    width: 560px;
+    width: 420px;
     position: relative;
 }
 
@@ -129,7 +128,7 @@ html, body {
 }
 .chart-center-label .total {
     font-family: 'Share Tech Mono', monospace;
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 700;
     color: #fff;
     line-height: 1;
@@ -142,16 +141,16 @@ html, body {
     margin-top: 5px;
 }
 
-/* legenda — scroll independente, altura fixa */
+/* legenda — scroll independente */
 .legend-col {
     flex: 1;
     min-width: 0;
-    max-height: 560px;
+    max-height: 420px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 7px;
-    padding-right: 4px;
+    padding-right: 6px;
     align-self: stretch;
 }
 
@@ -163,7 +162,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 13px;
+    padding: 10px 14px;
     background: #201c1c;
     border: 1px solid #2e2828;
     border-radius: 8px;
@@ -326,19 +325,9 @@ html, body {
         gap: 24px;
         padding: 20px 16px;
     }
-
-    .chart-col {
-        width: 100%;
-    }
-
-    /* legenda em baixo, altura fixa com scroll */
-    .legend-col {
-        max-height: 260px;
-        overflow-y: auto;
-    }
-
+    .chart-col { width: 100%; }
+    .legend-col { max-height: 260px; }
     .page-header h1 { font-size: 26px; }
-
     .index-grid { max-width: 100%; }
     .index-btn  { height: 76px; font-size: 14px; }
 }
@@ -347,7 +336,7 @@ html, body {
 </head>
 <body>
 
-<a href="index.html" class="home-btn" title="Home">🏠</a>
+<a href="index.html" class="home-btn" title="Voltar para Home">🏠</a>
 
 <div class="page-header">
   <h1>Experiência</h1>
@@ -365,7 +354,7 @@ html, body {
     <div class="legend-col" id="legend"></div>
 
   </div>
-  <p class="timestamp">ATUALIZADO EM 02/05/2026 às 08:10</p>
+  <p class="timestamp">ATUALIZADO EM 02/05/2026 às 13:51 (HORÁRIO DE BRASÍLIA)</p>
 </div>
 
 <script>
@@ -374,7 +363,9 @@ const COUNTS = [201, 9, 6, 3, 2];
 const COLORS = ["#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9"];
 const TOTAL  = 221;
 
-const hidden = new Set();
+// inicia com "Não definido" já oculto
+const hidden = new Set([0]);
+
 const ctx = document.getElementById('myChart').getContext('2d');
 
 function buildDataset() {
