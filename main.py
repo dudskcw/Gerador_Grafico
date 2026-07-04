@@ -725,6 +725,8 @@ else:
     nei       = to_counts_exploded(df_jogos["NEI"])
     consoles  = {k: int(v) for k, v in df_consoles["Console"].value_counts().items()}
     total     = len(df_jogos)
+    print(df_jogos["NEI"].tolist())
+    print(nei)
 
     with open("franquias.html", "w", encoding="utf-8") as f:
         f.write(build_chart_page(
