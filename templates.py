@@ -1,11 +1,11 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Game.DB</title>
-<style>
+"""
+Todo o código HTML, CSS e JavaScript estático das páginas do Game.DB.
+Este módulo só monta strings — nenhuma lógica de dados ou de rede aqui.
+"""
 
+import json
+
+SHARED_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -338,7 +338,170 @@ html, body {
     .index-grid { max-width: 100%; }
     .index-btn  { height: 76px; font-size: 14px; }
 }
+"""
 
+HOME_BTN = '<a href="index.html" class="home-btn" title="Voltar para Home">🏠</a>'
+
+
+def build_chart_page(title, subtitle, labels, counts, colors, agora,
+                      flags=None, center_label="tipos", show_center=True,
+                      hidden_indices=None):
+    """
+    Monta uma página de gráfico de rosca com legenda interativa.
+
+    labels/counts/colors devem ter o mesmo tamanho e já vir na ordem
+    desejada de exibição — a legenda respeita essa ordem tal como recebida.
+    flags: lista opcional (mesmo tamanho de labels) com URL de bandeira
+           por item, ou None onde não houver bandeira.
+    hidden_indices: índices que começam ocultos no gráfico/legenda
+                    (ex.: "Não definido").
+    """
+    hidden_indices = hidden_indices or []
+    total = sum(counts)
+    unique = len(labels) - len(hidden_indices)
+
+    labels_json = json.dumps(labels, ensure_ascii=False)
+    counts_json = json.dumps(counts)
+    colors_json = json.dumps(colors)
+    flags_json = json.dumps(flags if flags else [None] * len(labels))
+    hidden_json = json.dumps(hidden_indices)
+
+    center_html = ""
+    if show_center:
+        center_html = f"""
+      <div class="chart-center-label">
+        <div class="total">{unique}</div>
+        <div class="total-label">{center_label}</div>
+      </div>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title} — Game.DB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+{SHARED_CSS}
+</style>
+</head>
+<body>
+
+{HOME_BTN}
+
+<div class="page-header">
+  <h1>{title}</h1>
+  <p class="sub">{subtitle}</p>
+</div>
+
+<div class="chart-outer">
+  <div class="card">
+
+    <div class="chart-col">
+      <canvas id="myChart"></canvas>
+      {center_html}
+    </div>
+
+    <div class="legend-col" id="legend"></div>
+
+  </div>
+  <p class="timestamp">ATUALIZADO EM {agora} (HORÁRIO DE BRASÍLIA)</p>
+</div>
+
+<script>
+const LABELS = {labels_json};
+const COUNTS = {counts_json};
+const COLORS = {colors_json};
+const FLAGS  = {flags_json};
+const TOTAL  = {total};
+
+// índices que começam ocultos (ex.: "Não definido")
+const hidden = new Set({hidden_json});
+
+const ctx = document.getElementById('myChart').getContext('2d');
+
+function buildDataset() {{
+  return COUNTS.map((c, i) => hidden.has(i) ? 0 : c);
+}}
+
+const chart = new Chart(ctx, {{
+  type: 'doughnut',
+  data: {{
+    labels: LABELS,
+    datasets: [{{
+      data: buildDataset(),
+      backgroundColor: COLORS,
+      borderColor: '#201c1c',
+      borderWidth: 3,
+      hoverOffset: 10,
+    }}]
+  }},
+  options: {{
+    responsive: true,
+    cutout: '62%',
+    plugins: {{
+      legend: {{ display: false }},
+      tooltip: {{
+        callbacks: {{
+          label: (ctx) => {{
+            const i = ctx.dataIndex;
+            const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
+            return ` ${{COUNTS[i]}} (${{pct}}%)`;
+          }}
+        }},
+        backgroundColor: '#1a1616',
+        titleColor: '#e8e0d8',
+        bodyColor: '#8a7f7f',
+        borderColor: '#2e2828',
+        borderWidth: 1,
+        padding: 12,
+      }}
+    }},
+    animation: {{ duration: 500 }},
+  }}
+}});
+
+function renderLegend() {{
+  const leg = document.getElementById('legend');
+  leg.innerHTML = '';
+  LABELS.forEach((label, i) => {{
+    const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
+    const flagHtml = FLAGS[i] ? `<img class="legend-flag" src="${{FLAGS[i]}}" alt="">` : '';
+    const item = document.createElement('div');
+    item.className = 'legend-item' + (hidden.has(i) ? ' hidden' : '');
+    item.innerHTML = `
+      <div class="legend-swatch" style="background:${{COLORS[i]}}"></div>
+      ${{flagHtml}}
+      <span class="legend-name">${{label}}</span>
+      <span class="legend-pct">${{pct}}%</span>
+      <span class="legend-count">${{COUNTS[i]}}</span>`;
+    item.addEventListener('click', () => {{
+      if (hidden.has(i)) hidden.delete(i);
+      else hidden.add(i);
+      chart.data.datasets[0].data = buildDataset();
+      chart.update();
+      renderLegend();
+    }});
+    leg.appendChild(item);
+  }});
+}}
+
+renderLegend();
+</script>
+</body>
+</html>"""
+
+
+def build_index_page(total_jogos):
+    """Monta a página inicial, com saudação calculada no navegador do usuário."""
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game.DB</title>
+<style>
+{SHARED_CSS}
 </style>
 </head>
 <body>
@@ -348,7 +511,7 @@ html, body {
   <div class="greeting">
     <p class="time-msg">// game.db</p>
     <h1 id="greeting-line"><span>Eduardo!</span></h1>
-    <p class="count-line">você já finalizou um total de <strong>224 jogos</strong></p>
+    <p class="count-line">você já finalizou um total de <strong>{total_jogos} jogos</strong></p>
   </div>
 
   <div class="index-grid">
@@ -362,13 +525,13 @@ html, body {
 
 <script>
 // saudação baseada no horário local do navegador do usuário
-(function() {
+(function() {{
   var h = new Date().getHours();
   var s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   document.getElementById('greeting-line').innerHTML =
     s + ', <span>Eduardo!</span>';
-})();
+}})();
 </script>
 
 </body>
-</html>
+</html>"""

@@ -179,6 +179,14 @@ html, body {
     border-radius: 3px;
     flex-shrink: 0;
 }
+.legend-flag {
+    width: 20px;
+    height: auto;
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+    display: block;
+}
 .legend-name {
     flex: 1;
     font-size: 14px;
@@ -358,16 +366,17 @@ html, body {
     <div class="legend-col" id="legend"></div>
 
   </div>
-  <p class="timestamp">ATUALIZADO EM 08/07/2026 às 06:07 (HORÁRIO DE BRASÍLIA)</p>
+  <p class="timestamp">ATUALIZADO EM 08/07/2026 às 15:28 (HORÁRIO DE BRASÍLIA)</p>
 </div>
 
 <script>
 const LABELS = ["Sonic", "Mega Man", "Não definido", "Mario", "Castlevania", "Crash", "Kirby", "Wario", "Street Fighter", "Final Fighter", "Bloodstained", "Klonoa", "Capcom vs.", "Super Smash Bros", "JoJo", "Ben 10", "Undertale", "Final Fantasy", "One Piece", "Donkey Kong", "Hollow Knight", "Sin & Punishment", "Disney Mickey", "NiGHTS"];
 const COUNTS = [54, 38, 33, 23, 10, 10, 8, 6, 5, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2];
 const COLORS = ["#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7", "#748ffc", "#da77f2", "#f783ac", "#a9e34b", "#63e6be", "#74c0fc", "#e599f7", "#ffa8a8", "#ffe066", "#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7", "#748ffc", "#da77f2", "#f783ac"];
+const FLAGS  = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null];
 const TOTAL  = 224;
 
-// inicia com "Não definido" já oculto
+// índices que começam ocultos (ex.: "Não definido")
 const hidden = new Set([2]);
 
 const ctx = document.getElementById('myChart').getContext('2d');
@@ -418,10 +427,12 @@ function renderLegend() {
   leg.innerHTML = '';
   LABELS.forEach((label, i) => {
     const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
+    const flagHtml = FLAGS[i] ? `<img class="legend-flag" src="${FLAGS[i]}" alt="">` : '';
     const item = document.createElement('div');
     item.className = 'legend-item' + (hidden.has(i) ? ' hidden' : '');
     item.innerHTML = `
       <div class="legend-swatch" style="background:${COLORS[i]}"></div>
+      ${flagHtml}
       <span class="legend-name">${label}</span>
       <span class="legend-pct">${pct}%</span>
       <span class="legend-count">${COUNTS[i]}</span>`;

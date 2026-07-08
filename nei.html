@@ -179,6 +179,14 @@ html, body {
     border-radius: 3px;
     flex-shrink: 0;
 }
+.legend-flag {
+    width: 20px;
+    height: auto;
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+    display: block;
+}
 .legend-name {
     flex: 1;
     font-size: 14px;
@@ -354,17 +362,18 @@ html, body {
     <div class="legend-col" id="legend"></div>
 
   </div>
-  <p class="timestamp">ATUALIZADO EM 08/07/2026 às 06:07 (HORÁRIO DE BRASÍLIA)</p>
+  <p class="timestamp">ATUALIZADO EM 08/07/2026 às 15:28 (HORÁRIO DE BRASÍLIA)</p>
 </div>
 
 <script>
-const LABELS = ["Não definido", "C - Satisfeito", "B - Promissor", "A - Gratificante", "F - Bomba", "D - Comprometido"];
-const COUNTS = [194, 9, 8, 7, 5, 1];
-const COLORS = ["#ff6b6b", "#ffa94d", "#ffd43b", "#69db7c", "#38d9a9", "#4dabf7"];
+const LABELS = ["A - Gratificante", "B - Promissor", "C - Satisfeito", "D - Comprometido", "F - Bomba", "Não definido"];
+const COUNTS = [7, 8, 9, 1, 5, 194];
+const COLORS = ["#ffd43b", "#51cf66", "#4dabf7", "#9775fa", "#ff6b6b", "#5a5050"];
+const FLAGS  = [null, null, null, null, null, null];
 const TOTAL  = 224;
 
-// inicia com "Não definido" já oculto
-const hidden = new Set([0]);
+// índices que começam ocultos (ex.: "Não definido")
+const hidden = new Set([5]);
 
 const ctx = document.getElementById('myChart').getContext('2d');
 
@@ -414,10 +423,12 @@ function renderLegend() {
   leg.innerHTML = '';
   LABELS.forEach((label, i) => {
     const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
+    const flagHtml = FLAGS[i] ? `<img class="legend-flag" src="${FLAGS[i]}" alt="">` : '';
     const item = document.createElement('div');
     item.className = 'legend-item' + (hidden.has(i) ? ' hidden' : '');
     item.innerHTML = `
       <div class="legend-swatch" style="background:${COLORS[i]}"></div>
+      ${flagHtml}
       <span class="legend-name">${label}</span>
       <span class="legend-pct">${pct}%</span>
       <span class="legend-count">${COUNTS[i]}</span>`;
