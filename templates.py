@@ -1,0 +1,537 @@
+"""
+Todo o código HTML, CSS e JavaScript estático das páginas do Game.DB.
+Este módulo só monta strings — nenhuma lógica de dados ou de rede aqui.
+"""
+
+import json
+
+SHARED_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    background: #201c1c;
+    color: #e8e0d8;
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+}
+
+@keyframes glowing {
+    0%   { background-position: 0 0; }
+    50%  { background-position: 400% 0; }
+    100% { background-position: 0 0; }
+}
+
+/* ── HOME BUTTON ── */
+.home-btn {
+    position: fixed;
+    top: 16px; left: 16px;
+    z-index: 100;
+    width: 40px; height: 40px;
+    background: #111;
+    border: none;
+    border-radius: 10px;
+    color: #e8e0d8;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+}
+.home-btn::before {
+    content: '';
+    background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
+    position: absolute;
+    top: -2px; left: -2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(5px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing 20s linear infinite;
+    opacity: 0;
+    transition: opacity .3s;
+    border-radius: 10px;
+}
+.home-btn::after {
+    content: '';
+    z-index: -1;
+    position: absolute;
+    width: 100%; height: 100%;
+    background: #111;
+    left: 0; top: 0;
+    border-radius: 10px;
+}
+.home-btn:hover::before { opacity: 1; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+    text-align: center;
+    padding: 52px 24px 16px;
+}
+.page-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #fff;
+    line-height: 1;
+}
+.page-header .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #5a5050;
+    letter-spacing: 3px;
+    margin-top: 6px;
+}
+
+/* ── CHART LAYOUT ── */
+.chart-outer {
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 0 20px 60px;
+}
+
+.card {
+    background: #1a1616;
+    border: 1px solid #2e2828;
+    border-radius: 16px;
+    padding: 32px 36px;
+    position: relative;
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #4a3f3f, transparent);
+    pointer-events: none;
+}
+
+/* gráfico — 420px (560 * 0.75) */
+.chart-col {
+    flex-shrink: 0;
+    width: 420px;
+    position: relative;
+}
+
+.chart-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+.chart-center-label .total {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+.chart-center-label .total-label {
+    font-size: 12px;
+    color: #5a5050;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+/* legenda — scroll independente */
+.legend-col {
+    flex: 1;
+    min-width: 0;
+    max-height: 420px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-right: 6px;
+    align-self: stretch;
+}
+
+.legend-col::-webkit-scrollbar { width: 4px; }
+.legend-col::-webkit-scrollbar-track { background: transparent; }
+.legend-col::-webkit-scrollbar-thumb { background: #2e2828; border-radius: 4px; }
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #201c1c;
+    border: 1px solid #2e2828;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .2s, opacity .2s;
+    user-select: none;
+    flex-shrink: 0;
+}
+.legend-item:hover { border-color: #4a3f3f; }
+.legend-item.hidden { opacity: .35; }
+
+.legend-swatch {
+    width: 11px; height: 11px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.legend-flag {
+    width: 20px;
+    height: auto;
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+    display: block;
+}
+.legend-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e8e0d8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.legend-pct {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #8a7f7f;
+    flex-shrink: 0;
+}
+.legend-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #5a5050;
+    flex-shrink: 0;
+}
+
+/* ── TIMESTAMP ── */
+.timestamp {
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #3a3333;
+    letter-spacing: 2px;
+    margin-top: 16px;
+}
+
+/* ── INDEX ── */
+.index-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 24px;
+}
+
+.greeting {
+    text-align: center;
+    margin-bottom: 52px;
+}
+.greeting .time-msg {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: #5a5050;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+.greeting h1 {
+    font-size: clamp(28px, 5vw, 54px);
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    line-height: 1.1;
+}
+.greeting h1 span {
+    background: linear-gradient(90deg,#ff6b6b,#ffd43b,#69db7c,#4dabf7,#da77f2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.greeting .count-line {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: #5a5050;
+    letter-spacing: 2px;
+    margin-top: 14px;
+}
+.greeting .count-line strong { color: #8a7f7f; }
+
+.index-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 540px;
+}
+
+.index-btn {
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    height: 90px;
+    background: #111;
+    color: #e8e0d8;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: color .2s;
+}
+.index-btn .icon { font-size: 26px; }
+
+.index-btn::before {
+    content: '';
+    background: linear-gradient(45deg,#ff0000,#ff7300,#fffb00,#48ff00,#00ffd5,#002bff,#7a00ff,#ff00c8,#ff0000);
+    position: absolute;
+    top: -2px; left: -2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(8px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing 20s linear infinite;
+    opacity: 0;
+    transition: opacity .35s;
+    border-radius: 14px;
+}
+.index-btn::after {
+    content: '';
+    z-index: -1;
+    position: absolute;
+    width: 100%; height: 100%;
+    background: #111;
+    left: 0; top: 0;
+    border-radius: 14px;
+}
+.index-btn:hover::before { opacity: 1; }
+.index-btn:hover { color: #fff; }
+.index-btn:active { color: #000; }
+.index-btn:active::after { background: transparent; }
+
+/* ── MOBILE ── */
+@media (max-width: 700px) {
+    .card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 24px;
+        padding: 20px 16px;
+    }
+    .chart-col { width: 100%; }
+    .legend-col { max-height: 260px; }
+    .page-header h1 { font-size: 26px; }
+    .index-grid { max-width: 100%; }
+    .index-btn  { height: 76px; font-size: 14px; }
+}
+"""
+
+HOME_BTN = '<a href="index.html" class="home-btn" title="Voltar para Home">🏠</a>'
+
+
+def build_chart_page(title, subtitle, labels, counts, colors, agora,
+                      flags=None, center_label="tipos", show_center=True,
+                      hidden_indices=None):
+    """
+    Monta uma página de gráfico de rosca com legenda interativa.
+
+    labels/counts/colors devem ter o mesmo tamanho e já vir na ordem
+    desejada de exibição — a legenda respeita essa ordem tal como recebida.
+    flags: lista opcional (mesmo tamanho de labels) com URL de bandeira
+           por item, ou None onde não houver bandeira.
+    hidden_indices: índices que começam ocultos no gráfico/legenda
+                    (ex.: "Não definido").
+    """
+    hidden_indices = hidden_indices or []
+    total = sum(counts)
+    unique = len(labels) - len(hidden_indices)
+
+    labels_json = json.dumps(labels, ensure_ascii=False)
+    counts_json = json.dumps(counts)
+    colors_json = json.dumps(colors)
+    flags_json = json.dumps(flags if flags else [None] * len(labels))
+    hidden_json = json.dumps(hidden_indices)
+
+    center_html = ""
+    if show_center:
+        center_html = f"""
+      <div class="chart-center-label">
+        <div class="total">{unique}</div>
+        <div class="total-label">{center_label}</div>
+      </div>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title} — Game.DB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+{SHARED_CSS}
+</style>
+</head>
+<body>
+
+{HOME_BTN}
+
+<div class="page-header">
+  <h1>{title}</h1>
+  <p class="sub">{subtitle}</p>
+</div>
+
+<div class="chart-outer">
+  <div class="card">
+
+    <div class="chart-col">
+      <canvas id="myChart"></canvas>
+      {center_html}
+    </div>
+
+    <div class="legend-col" id="legend"></div>
+
+  </div>
+  <p class="timestamp">ATUALIZADO EM {agora} (HORÁRIO DE BRASÍLIA)</p>
+</div>
+
+<script>
+const LABELS = {labels_json};
+const COUNTS = {counts_json};
+const COLORS = {colors_json};
+const FLAGS  = {flags_json};
+const TOTAL  = {total};
+
+// índices que começam ocultos (ex.: "Não definido")
+const hidden = new Set({hidden_json});
+
+const ctx = document.getElementById('myChart').getContext('2d');
+
+function buildDataset() {{
+  return COUNTS.map((c, i) => hidden.has(i) ? 0 : c);
+}}
+
+const chart = new Chart(ctx, {{
+  type: 'doughnut',
+  data: {{
+    labels: LABELS,
+    datasets: [{{
+      data: buildDataset(),
+      backgroundColor: COLORS,
+      borderColor: '#201c1c',
+      borderWidth: 3,
+      hoverOffset: 10,
+    }}]
+  }},
+  options: {{
+    responsive: true,
+    cutout: '62%',
+    plugins: {{
+      legend: {{ display: false }},
+      tooltip: {{
+        callbacks: {{
+          label: (ctx) => {{
+            const i = ctx.dataIndex;
+            const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
+            return ` ${{COUNTS[i]}} (${{pct}}%)`;
+          }}
+        }},
+        backgroundColor: '#1a1616',
+        titleColor: '#e8e0d8',
+        bodyColor: '#8a7f7f',
+        borderColor: '#2e2828',
+        borderWidth: 1,
+        padding: 12,
+      }}
+    }},
+    animation: {{ duration: 500 }},
+  }}
+}});
+
+function renderLegend() {{
+  const leg = document.getElementById('legend');
+  leg.innerHTML = '';
+  LABELS.forEach((label, i) => {{
+    const pct = ((COUNTS[i] / TOTAL) * 100).toFixed(1);
+    const flagHtml = FLAGS[i] ? `<img class="legend-flag" src="${{FLAGS[i]}}" alt="">` : '';
+    const item = document.createElement('div');
+    item.className = 'legend-item' + (hidden.has(i) ? ' hidden' : '');
+    item.innerHTML = `
+      <div class="legend-swatch" style="background:${{COLORS[i]}}"></div>
+      ${{flagHtml}}
+      <span class="legend-name">${{label}}</span>
+      <span class="legend-pct">${{pct}}%</span>
+      <span class="legend-count">${{COUNTS[i]}}</span>`;
+    item.addEventListener('click', () => {{
+      if (hidden.has(i)) hidden.delete(i);
+      else hidden.add(i);
+      chart.data.datasets[0].data = buildDataset();
+      chart.update();
+      renderLegend();
+    }});
+    leg.appendChild(item);
+  }});
+}}
+
+renderLegend();
+</script>
+</body>
+</html>"""
+
+
+def build_index_page(total_jogos):
+    """Monta a página inicial, com saudação calculada no navegador do usuário."""
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game.DB</title>
+<style>
+{SHARED_CSS}
+</style>
+</head>
+<body>
+
+<div class="index-wrap">
+
+  <div class="greeting">
+    <p class="time-msg">// game.db</p>
+    <h1 id="greeting-line"><span>Eduardo!</span></h1>
+    <p class="count-line">você já finalizou um total de <strong>{total_jogos} jogos</strong></p>
+  </div>
+
+  <div class="index-grid">
+    <a href="franquias.html" class="index-btn"><span class="icon">🎮</span> Franquias</a>
+    <a href="paises.html"    class="index-btn"><span class="icon">🌍</span> Países</a>
+    <a href="consoles.html"  class="index-btn"><span class="icon">🕹️</span> Consoles</a>
+    <a href="nei.html"       class="index-btn"><span class="icon">📊</span> Experiência</a>
+  </div>
+
+</div>
+
+<script>
+// saudação baseada no horário local do navegador do usuário
+(function() {{
+  var h = new Date().getHours();
+  var s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  document.getElementById('greeting-line').innerHTML =
+    s + ', <span>Eduardo!</span>';
+}})();
+</script>
+
+</body>
+</html>"""
